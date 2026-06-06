@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 
@@ -15,15 +16,33 @@ const navItems = [
 export function Layout() {
   const { profile, signOut } = useAuth()
   const navigate = useNavigate()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   async function handleSignOut() {
     await signOut()
     navigate('/login')
   }
 
+  function handleNav() {
+    setSidebarOpen(false)
+  }
+
   return (
     <div className="flex h-screen bg-gray-100">
-      <aside className="w-64 bg-gray-800 text-white flex flex-col">
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-gray-800 text-white flex flex-col transition-transform duration-200 lg:relative lg:translate-x-0 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
         <div className="p-4 border-b border-gray-700">
           <h1 className="text-lg font-bold">Finance App</h1>
           {profile && (
@@ -32,12 +51,13 @@ export function Layout() {
             </p>
           )}
         </div>
-        <nav className="flex-1 p-2 space-y-1">
+        <nav className="flex-1 p-2 space-y-1 overflow-auto">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.to === '/'}
+              onClick={handleNav}
               className={({ isActive }) =>
                 `block px-3 py-2 rounded text-sm ${
                   isActive ? 'bg-gray-600 text-white' : 'text-gray-300 hover:bg-gray-700'
@@ -57,8 +77,25 @@ export function Layout() {
           </button>
         </div>
       </aside>
-      <main className="flex-1 overflow-auto p-6">
-        <Outlet />
+
+      {/* Main content */}
+      <main className="flex-1 overflow-auto">
+        {/* Mobile header bar */}
+        <div className="flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-200 lg:hidden">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="text-gray-700"
+            aria-label="Open menu"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <h1 className="font-semibold text-gray-800">Finance App</h1>
+        </div>
+        <div className="p-4 lg:p-6">
+          <Outlet />
+        </div>
       </main>
     </div>
   )

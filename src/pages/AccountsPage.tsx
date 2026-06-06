@@ -96,20 +96,20 @@ export function AccountsPage() {
   const filtered = filter === 'all' ? accounts : accounts.filter((a) => a.type === filter)
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Chart of Accounts</h1>
+    <div className="max-w-full">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold">Chart of Accounts</h1>
         {isAdmin && (
-          <button onClick={startCreate} className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">
+          <button onClick={startCreate} className="bg-blue-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded text-sm hover:bg-blue-700">
             + New Account
           </button>
         )}
       </div>
 
-      <div className="flex gap-2 mb-4">
+      <div className="flex flex-wrap gap-1.5 mb-4">
         <button
           onClick={() => setFilter('all')}
-          className={`px-3 py-1 rounded text-sm ${filter === 'all' ? 'bg-gray-800 text-white' : 'bg-gray-200 text-gray-700'}`}
+          className={`px-2.5 py-1 rounded text-xs sm:text-sm ${filter === 'all' ? 'bg-gray-800 text-white' : 'bg-gray-200 text-gray-700'}`}
         >
           All
         </button>
@@ -117,7 +117,7 @@ export function AccountsPage() {
           <button
             key={t}
             onClick={() => setFilter(t)}
-            className={`px-3 py-1 rounded text-sm capitalize ${filter === t ? 'bg-gray-800 text-white' : 'bg-gray-200 text-gray-700'}`}
+            className={`px-2.5 py-1 rounded text-xs sm:text-sm capitalize ${filter === t ? 'bg-gray-800 text-white' : 'bg-gray-200 text-gray-700'}`}
           >
             {t}
           </button>
@@ -125,9 +125,9 @@ export function AccountsPage() {
       </div>
 
       {showForm && (
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
+        <div className="bg-white rounded-lg shadow p-3 sm:p-4 mb-6">
           <h2 className="text-lg font-semibold mb-4">{editingId ? 'Edit Account' : 'New Account'}</h2>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Code</label>
               <input
@@ -171,7 +171,7 @@ export function AccountsPage() {
                 ))}
               </select>
             </div>
-            <div className="md:col-span-4 flex gap-2">
+            <div className="sm:col-span-2 lg:col-span-4 flex gap-2">
               <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">
                 {editingId ? 'Update' : 'Create'}
               </button>
@@ -187,39 +187,39 @@ export function AccountsPage() {
       {loading ? (
         <p className="text-gray-500">Loading...</p>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-white rounded-lg shadow overflow-x-auto">
+          <table className="w-full text-sm min-w-[600px]">
             <thead>
               <tr className="text-left text-gray-500 bg-gray-50">
-                <th className="px-4 py-3">Code</th>
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Type</th>
-                <th className="px-4 py-3">Cash Flow</th>
-                <th className="px-4 py-3">Status</th>
-                {isAdmin && <th className="px-4 py-3">Actions</th>}
+                <th className="px-3 py-2 sm:px-4 sm:py-3">Code</th>
+                <th className="px-3 py-2 sm:px-4 sm:py-3">Name</th>
+                <th className="px-3 py-2 sm:px-4 sm:py-3">Type</th>
+                <th className="px-3 py-2 sm:px-4 sm:py-3 hidden md:table-cell">Cash Flow</th>
+                <th className="px-3 py-2 sm:px-4 sm:py-3">Status</th>
+                {isAdmin && <th className="px-3 py-2 sm:px-4 sm:py-3">Actions</th>}
               </tr>
             </thead>
             <tbody>
               {filtered.map((account) => (
                 <tr key={account.id} className="border-t hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-xs">{account.code}</td>
-                  <td className="px-4 py-3">{account.name}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-2 sm:px-4 sm:py-3 font-mono text-xs whitespace-nowrap">{account.code}</td>
+                  <td className="px-3 py-2 sm:px-4 sm:py-3 whitespace-nowrap">{account.name}</td>
+                  <td className="px-3 py-2 sm:px-4 sm:py-3 whitespace-nowrap">
                     <span className={`px-2 py-0.5 rounded text-xs capitalize ${typeColors[account.type]}`}>
                       {account.type}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-xs capitalize">{account.cash_flow_category}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-2 sm:px-4 sm:py-3 text-xs capitalize hidden md:table-cell">{account.cash_flow_category}</td>
+                  <td className="px-3 py-2 sm:px-4 sm:py-3 whitespace-nowrap">
                     <span className={`text-xs ${account.is_active ? 'text-green-600' : 'text-gray-400'}`}>
                       {account.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </td>
                   {isAdmin && (
-                    <td className="px-4 py-3 space-x-2">
-                      <button onClick={() => startEdit(account)} className="text-blue-600 hover:underline text-xs">Edit</button>
+                    <td className="px-3 py-2 sm:px-4 sm:py-3 whitespace-nowrap">
+                      <button onClick={() => startEdit(account)} className="text-blue-600 hover:underline text-xs mr-1.5">Edit</button>
                       <button onClick={() => toggleActive(account.id, account.is_active)} className="text-xs hover:underline text-gray-600">
-                        {account.is_active ? 'Deactivate' : 'Activate'}
+                        {account.is_active ? 'Deact.' : 'Activate'}
                       </button>
                     </td>
                   )}

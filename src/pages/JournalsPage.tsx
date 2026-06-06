@@ -64,11 +64,11 @@ export function JournalsPage() {
   }
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Journal Entries</h1>
+    <div className="max-w-full">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold">Journal Entries</h1>
         {isAdmin && (
-          <Link to="/journals/new" className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">
+          <Link to="/journals/new" className="bg-blue-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded text-sm hover:bg-blue-700">
             + New Entry
           </Link>
         )}
@@ -81,11 +81,11 @@ export function JournalsPage() {
           {journals.map((j) => {
             const totalDebit = j.journal_lines.filter((l) => l.type === 'debit').reduce((s, l) => s + l.amount, 0)
             return (
-              <div key={j.id} className="bg-white rounded-lg shadow p-4">
-                <div className="flex justify-between items-start mb-2">
+              <div key={j.id} className="bg-white rounded-lg shadow p-3 sm:p-4 overflow-x-auto">
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-1 mb-2">
                   <div>
-                    <p className="font-semibold">{j.description}</p>
-                    <p className="text-sm text-gray-500">{formatDate(j.date)}</p>
+                    <p className="font-semibold text-sm sm:text-base">{j.description}</p>
+                    <p className="text-xs sm:text-sm text-gray-500">{formatDate(j.date)}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`px-2 py-0.5 rounded text-xs ${
@@ -94,13 +94,13 @@ export function JournalsPage() {
                       {j.status}
                     </span>
                     {isAdmin && j.status === 'posted' && (
-                      <button onClick={() => handleReverse(j.id)} className="text-xs text-red-600 hover:underline">
+                      <button onClick={() => handleReverse(j.id)} className="text-xs text-red-600 hover:underline whitespace-nowrap">
                         Reverse
                       </button>
                     )}
                   </div>
                 </div>
-                <table className="w-full text-sm mt-2">
+                <table className="w-full text-sm mt-2 min-w-[300px]">
                   <thead>
                     <tr className="text-gray-500 text-xs border-b">
                       <th className="text-left pb-1">Account</th>
@@ -111,9 +111,9 @@ export function JournalsPage() {
                   <tbody>
                     {j.journal_lines.map((line) => (
                       <tr key={line.id} className="border-b last:border-0">
-                        <td className="py-1">{accounts[line.account_id]?.code} - {accounts[line.account_id]?.name}</td>
-                        <td className="py-1 text-right">{line.type === 'debit' ? formatIDR(line.amount) : ''}</td>
-                        <td className="py-1 text-right">{line.type === 'credit' ? formatIDR(line.amount) : ''}</td>
+                        <td className="py-1 whitespace-nowrap">{accounts[line.account_id]?.code} - {accounts[line.account_id]?.name}</td>
+                        <td className="py-1 text-right whitespace-nowrap">{line.type === 'debit' ? formatIDR(line.amount) : ''}</td>
+                        <td className="py-1 text-right whitespace-nowrap">{line.type === 'credit' ? formatIDR(line.amount) : ''}</td>
                       </tr>
                     ))}
                   </tbody>

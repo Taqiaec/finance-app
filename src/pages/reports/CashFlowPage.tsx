@@ -86,10 +86,10 @@ export function CashFlowPage() {
   const grandTotal = sections.reduce((s, sec) => s + sec.total, 0)
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Cash Flow Statement (Indirect Method)</h1>
+    <div className="max-w-full">
+      <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Cash Flow Statement (Indirect Method)</h1>
 
-      <div className="flex gap-4 mb-6 items-end">
+      <div className="flex flex-wrap gap-3 sm:gap-4 mb-4 sm:mb-6 items-end">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Period</label>
           <select value={selectedPeriod} onChange={(e) => setSelectedPeriod(e.target.value)} className="border border-gray-300 rounded px-3 py-2 text-sm">
@@ -103,17 +103,17 @@ export function CashFlowPage() {
       {loading && <p className="text-gray-500">Loading...</p>}
 
       {!loading && ran && (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {sections.map((sec) => (
-            <div key={sec.category} className="bg-white rounded-lg shadow p-4">
+            <div key={sec.category} className="bg-white rounded-lg shadow p-3 sm:p-4 overflow-x-auto">
               <h2 className="font-semibold mb-3">{sec.label}</h2>
-              <table className="w-full text-sm">
+              <table className="w-full text-sm min-w-[300px]">
                 <thead><tr className="text-gray-500 text-xs border-b"><th className="text-left pb-2">Account</th><th className="text-right pb-2">Cash Flow</th></tr></thead>
                 <tbody>
                   {sec.rows.map((r) => (
                     <tr key={r.account_code} className="border-b last:border-0">
-                      <td className="py-2">{r.account_code} - {r.account_name}</td>
-                      <td className={`py-2 text-right ${r.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatIDR(r.amount)}</td>
+                      <td className="py-2 whitespace-nowrap">{r.account_code} - {r.account_name}</td>
+                      <td className={`py-2 text-right whitespace-nowrap ${r.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatIDR(r.amount)}</td>
                     </tr>
                   ))}
                   {sec.rows.length === 0 && <tr><td colSpan={2} className="py-4 text-center text-gray-400">None</td></tr>}
@@ -123,7 +123,7 @@ export function CashFlowPage() {
             </div>
           ))}
 
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-lg shadow p-3 sm:p-4">
             <div className="flex justify-between items-center">
               <span className="font-bold">Net Change in Cash</span>
               <span className={`font-bold text-lg ${grandTotal >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatIDR(grandTotal)}</span>

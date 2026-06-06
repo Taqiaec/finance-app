@@ -83,10 +83,10 @@ export function TrialBalancePage() {
   const totalCredit = rows.reduce((s, r) => s + r.total_credit, 0)
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Trial Balance</h1>
+    <div className="max-w-full">
+      <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Trial Balance</h1>
 
-      <div className="flex gap-4 mb-6 items-end">
+      <div className="flex flex-wrap gap-3 sm:gap-4 mb-4 sm:mb-6 items-end">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Period</label>
           <select
@@ -108,31 +108,31 @@ export function TrialBalancePage() {
       {loading && <p className="text-gray-500">Loading...</p>}
 
       {!loading && ran && (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-white rounded-lg shadow overflow-x-auto">
+          <table className="w-full text-sm min-w-[500px]">
             <thead>
               <tr className="text-left text-gray-500 bg-gray-50">
-                <th className="px-4 py-3">Code</th>
-                <th className="px-4 py-3">Account</th>
-                <th className="px-4 py-3 text-right">Debit</th>
-                <th className="px-4 py-3 text-right">Credit</th>
+                <th className="px-3 py-2 sm:px-4 sm:py-3">Code</th>
+                <th className="px-3 py-2 sm:px-4 sm:py-3">Account</th>
+                <th className="px-3 py-2 sm:px-4 sm:py-3 text-right">Debit</th>
+                <th className="px-3 py-2 sm:px-4 sm:py-3 text-right">Credit</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.account_id} className="border-t hover:bg-gray-50">
-                  <td className="px-4 py-2 font-mono text-xs">{r.account_code}</td>
-                  <td className="px-4 py-2">{r.account_name}</td>
-                  <td className="px-4 py-2 text-right">{r.total_debit > 0 ? formatIDR(r.total_debit) : ''}</td>
-                  <td className="px-4 py-2 text-right">{r.total_credit > 0 ? formatIDR(r.total_credit) : ''}</td>
+                  <td className="px-3 py-2 sm:px-4 font-mono text-xs whitespace-nowrap">{r.account_code}</td>
+                  <td className="px-3 py-2 sm:px-4 whitespace-nowrap">{r.account_name}</td>
+                  <td className="px-3 py-2 sm:px-4 text-right whitespace-nowrap">{r.total_debit > 0 ? formatIDR(r.total_debit) : ''}</td>
+                  <td className="px-3 py-2 sm:px-4 text-right whitespace-nowrap">{r.total_credit > 0 ? formatIDR(r.total_credit) : ''}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr className="font-semibold border-t-2 bg-gray-50">
-                <td className="px-4 py-3" colSpan={2}>Total</td>
-                <td className="px-4 py-3 text-right">{formatIDR(totalDebit)}</td>
-                <td className="px-4 py-3 text-right">{formatIDR(totalCredit)}</td>
+                <td className="px-3 py-2 sm:px-4 sm:py-3" colSpan={2}>Total</td>
+                <td className="px-3 py-2 sm:px-4 sm:py-3 text-right">{formatIDR(totalDebit)}</td>
+                <td className="px-3 py-2 sm:px-4 sm:py-3 text-right">{formatIDR(totalCredit)}</td>
               </tr>
             </tfoot>
           </table>
