@@ -35,8 +35,13 @@ export function BalanceSheetPage() {
     setRan(true)
     setError('')
 
+    let periodFilter = selectedPeriod
+    if (!periodFilter && periods.length > 0) {
+      periodFilter = periods[0]!.id
+    }
+
     let query = supabase.from('v_balance_sheet').select('*')
-    if (selectedPeriod) query = query.eq('period_id', selectedPeriod)
+    if (periodFilter) query = query.eq('period_id', periodFilter)
     const { data, error: queryError } = await query.order('account_code')
 
     if (queryError) { setError(`Report unavailable: ${queryError.message}`); setAssets([]); setLiabilities([]); setEquity([]); setLoading(false); return }
