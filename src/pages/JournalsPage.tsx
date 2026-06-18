@@ -33,33 +33,10 @@ export function JournalsPage() {
 
   async function handleReverse(id: string) {
     if (!confirm('Reverse this journal entry?')) return
-    const journal = journals.find((j) => j.id === id)
-    if (!journal) return
 
-    const reversedLines = journal.journal_lines.map((l) => ({
-      account_id: l.account_id,
-      type: l.type === 'debit' ? 'credit' : 'debit',
-      amount: l.amount,
-    }))
+    const { error } = await supabase.rpc('reverse_journal', { p_journal_id: id })
+    if (error) { alert(error.message); return }
 
-    const { data: newJournal, error } = await supabase
-      .from('journals')
-      .insert({
-        date: new Date().toISOString().split('T')[0],
-        description: `Reversal of: ${journal.description}`,
-        period_id: journal.period_id,
-        status: 'posted',
-      })
-      .select()
-      .single()
-
-    if (error || !newJournal) { alert(error?.message ?? 'Failed'); return }
-
-    await supabase.from('journal_lines').insert(
-      reversedLines.map((l) => ({ ...l, journal_id: newJournal.id }))
-    )
-
-    await supabase.from('journals').update({ status: 'reversed', reversed_by: newJournal.id }).eq('id', id)
     window.location.reload()
   }
 

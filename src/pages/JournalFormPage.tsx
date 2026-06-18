@@ -85,16 +85,14 @@ export function JournalFormPage() {
     setSaving(true)
 
     if (isEdit && id) {
-      const { error: delErr } = await supabase.from('journal_lines').delete().eq('journal_id', id)
-      if (delErr) { setError(`Failed to clear lines: ${delErr.message}`); setSaving(false); return }
-
-      const { error: updErr } = await supabase.from('journals').update({ date, description, period_id: periodId || null }).eq('id', id)
-      if (updErr) { setError(`Failed to update journal: ${updErr.message}`); setSaving(false); return }
-
-      const { error: insErr } = await supabase.from('journal_lines').insert(
-        lines.map((l) => ({ journal_id: id, account_id: l.account_id, type: l.type, amount: l.amount }))
-      )
-      if (insErr) { setError(`Failed to insert lines: ${insErr.message}`); setSaving(false); return }
+      const { error: rpcErr } = await supabase.rpc('edit_journal', {
+        p_journal_id: id,
+        p_date: date,
+        p_description: description,
+        p_period_id: periodId || null,
+        p_lines: lines.map((l) => ({ account_id: l.account_id, type: l.type, amount: l.amount })),
+      })
+      if (rpcErr) { setError(`Failed to update journal: ${rpcErr.message}`); setSaving(false); return }
     } else {
       const { data: journal, error: jErr } = await supabase
         .from('journals')
