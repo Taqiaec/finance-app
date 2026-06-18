@@ -8,6 +8,7 @@ import { JournalsPage } from './pages/JournalsPage'
 import { JournalFormPage } from './pages/JournalFormPage'
 import { PeriodsPage } from './pages/PeriodsPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { MutasiPage } from './pages/MutasiPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { TrialBalancePage } from './pages/reports/TrialBalancePage'
 import { ProfitLossPage } from './pages/reports/ProfitLossPage'
@@ -25,6 +26,7 @@ export default function App() {
             <Route element={<Layout />}>
               <Route index element={<DashboardPage />} />
               <Route path="accounts" element={<AccountsPage />} />
+              <Route path="mutasi" element={<MutasiPage />} />
               <Route path="journals" element={<JournalsPage />} />
               <Route path="journals/new" element={<JournalFormPage />} />
               <Route path="journals/:id" element={<JournalFormPage />} />

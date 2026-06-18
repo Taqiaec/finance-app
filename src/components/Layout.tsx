@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   BookOpen,
   ScrollText,
+  ListOrdered,
   Calendar,
   BarChart3,
   TrendingUp,
@@ -21,6 +22,7 @@ import {
 const mainNav = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/accounts', label: 'Chart of Accounts', icon: BookOpen },
+  { to: '/mutasi', label: 'Account Statement', icon: ListOrdered },
   { to: '/journals', label: 'Journal Entries', icon: ScrollText },
 ]
 
