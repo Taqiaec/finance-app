@@ -2,6 +2,11 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { formatIDR } from '../../lib/format'
 import type { Period } from '../../lib/types'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Play } from 'lucide-react'
 
 interface TrialBalanceRow {
   account_id: string
@@ -47,15 +52,14 @@ export function TrialBalancePage() {
 
   return (
     <div className="max-w-full">
-      <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Trial Balance</h1>
+      <h1 className="text-2xl font-bold mb-6">Trial Balance</h1>
 
-      <div className="flex flex-wrap gap-3 sm:gap-4 mb-4 sm:mb-6 items-end">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Period</label>
+      <div className="flex flex-wrap gap-3 mb-6 items-end">
+        <div className="w-48">
           <select
             value={selectedPeriod}
             onChange={(e) => setSelectedPeriod(e.target.value)}
-            className="border border-gray-300 rounded px-3 py-2 text-sm"
+            className="flex h-8 w-full items-center justify-between rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#F08521]/20 focus:border-[#F08521]"
           >
             <option value="">All Periods</option>
             {periods.map((p) => (
@@ -63,50 +67,61 @@ export function TrialBalancePage() {
             ))}
           </select>
         </div>
-        <button onClick={runReport} className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">
+        <Button onClick={runReport} size="sm">
+          <Play className="h-4 w-4 mr-1" />
           Run Report
-        </button>
+        </Button>
       </div>
 
-      {loading && <p className="text-gray-500">Loading...</p>}
+      {loading && <p className="text-sm text-muted-foreground">Loading...</p>}
 
-      {error && <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded p-3 mb-4">{error}</p>}
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
       {!loading && ran && !error && (
-        <div className="bg-white rounded-lg shadow overflow-x-auto">
-          <table className="w-full text-sm min-w-[500px]">
-            <thead>
-              <tr className="text-left text-gray-500 bg-gray-50">
-                <th className="px-3 py-2 sm:px-4 sm:py-3">Code</th>
-                <th className="px-3 py-2 sm:px-4 sm:py-3">Account</th>
-                <th className="px-3 py-2 sm:px-4 sm:py-3 text-right">Debit</th>
-                <th className="px-3 py-2 sm:px-4 sm:py-3 text-right">Credit</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.account_id} className="border-t hover:bg-gray-50">
-                  <td className="px-3 py-2 sm:px-4 font-mono text-xs whitespace-nowrap">{r.account_code}</td>
-                  <td className="px-3 py-2 sm:px-4 whitespace-nowrap">{r.account_name}</td>
-                  <td className="px-3 py-2 sm:px-4 text-right whitespace-nowrap">{r.total_debit > 0 ? formatIDR(r.total_debit) : ''}</td>
-                  <td className="px-3 py-2 sm:px-4 text-right whitespace-nowrap">{r.total_credit > 0 ? formatIDR(r.total_credit) : ''}</td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr className="font-semibold border-t-2 bg-gray-50">
-                <td className="px-3 py-2 sm:px-4 sm:py-3" colSpan={2}>Total</td>
-                <td className="px-3 py-2 sm:px-4 sm:py-3 text-right">{formatIDR(totalDebit)}</td>
-                <td className="px-3 py-2 sm:px-4 sm:py-3 text-right">{formatIDR(totalCredit)}</td>
-              </tr>
-            </tfoot>
-          </table>
-          {totalDebit !== totalCredit && (
-            <p className="text-red-600 text-sm p-4">
-              Warning: Debits ({formatIDR(totalDebit)}) do not equal Credits ({formatIDR(totalCredit)})
-            </p>
-          )}
-        </div>
+        <Card>
+          <CardContent className="p-5 overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Code</TableHead>
+                  <TableHead>Account</TableHead>
+                  <TableHead className="text-right">Debit</TableHead>
+                  <TableHead className="text-right">Credit</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((r) => (
+                  <TableRow key={r.account_id}>
+                    <TableCell className="font-mono text-xs">{r.account_code}</TableCell>
+                    <TableCell className="text-sm">{r.account_name}</TableCell>
+                    <TableCell className="text-right text-sm">
+                      {r.total_debit > 0 ? formatIDR(r.total_debit) : ''}
+                    </TableCell>
+                    <TableCell className="text-right text-sm">
+                      {r.total_credit > 0 ? formatIDR(r.total_credit) : ''}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                <TableRow className="border-t-2 font-semibold">
+                  <TableCell colSpan={2} className="text-sm">Total</TableCell>
+                  <TableCell className="text-right text-sm">{formatIDR(totalDebit)}</TableCell>
+                  <TableCell className="text-right text-sm">{formatIDR(totalCredit)}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+      {!loading && ran && !error && totalDebit !== totalCredit && (
+        <Alert variant="destructive" className="mt-4">
+          <AlertDescription>
+            Warning: Debits ({formatIDR(totalDebit)}) do not equal Credits ({formatIDR(totalCredit)})
+          </AlertDescription>
+        </Alert>
       )}
     </div>
   )

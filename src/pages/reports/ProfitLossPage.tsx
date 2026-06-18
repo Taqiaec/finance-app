@@ -2,6 +2,11 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { formatIDR } from '../../lib/format'
 import type { Period } from '../../lib/types'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Play } from 'lucide-react'
 
 interface PnLRow {
   account_id: string
@@ -49,67 +54,89 @@ export function ProfitLossPage() {
   const totalExpense = expense.reduce((s, r) => s + (r.debit_total - r.credit_total), 0)
   const netIncome = totalRevenue - totalExpense
 
+  function ReportTable({ title, rows, totalLabel, totalValue }: { title: string; rows: PnLRow[]; totalLabel: string; totalValue: number }) {
+    return (
+      <Card>
+        <CardHeader className="p-5 pb-3">
+          <CardTitle className="text-lg">{title}</CardTitle>
+        </CardHeader>
+        <CardContent className="p-5">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Account</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((r) => (
+                <TableRow key={r.account_id}>
+                  <TableCell className="text-sm">{r.account_code} - {r.account_name}</TableCell>
+                  <TableCell className="text-right text-sm">{formatIDR(title === 'Revenue' ? r.credit_total - r.debit_total : r.debit_total - r.credit_total)}</TableCell>
+                </TableRow>
+              ))}
+              {rows.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={2} className="text-center py-4 text-muted-foreground">No {title.toLowerCase()}</TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+          <div className="flex justify-between items-center mt-2 pt-2 border-t text-sm font-semibold">
+            <span>{totalLabel}</span>
+            <span>{formatIDR(totalValue)}</span>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <div className="max-w-full">
-      <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Profit & Loss Statement</h1>
+      <h1 className="text-2xl font-bold mb-6">Profit & Loss Statement</h1>
 
-      <div className="flex flex-wrap gap-3 sm:gap-4 mb-4 sm:mb-6 items-end">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Period</label>
-          <select value={selectedPeriod} onChange={(e) => setSelectedPeriod(e.target.value)} className="border border-gray-300 rounded px-3 py-2 text-sm">
+      <div className="flex flex-wrap gap-3 mb-6 items-end">
+        <div className="w-48">
+          <select
+            value={selectedPeriod}
+            onChange={(e) => setSelectedPeriod(e.target.value)}
+            className="flex h-8 w-full items-center justify-between rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#F08521]/20 focus:border-[#F08521]"
+          >
             <option value="">All Periods</option>
-            {periods.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
+            {periods.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
           </select>
         </div>
-        <button onClick={runReport} className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">Run Report</button>
+        <Button onClick={runReport} size="sm">
+          <Play className="h-4 w-4 mr-1" />
+          Run Report
+        </Button>
       </div>
 
-      {loading && <p className="text-gray-500">Loading...</p>}
+      {loading && <p className="text-sm text-muted-foreground">Loading...</p>}
 
-      {error && <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded p-3 mb-4">{error}</p>}
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
       {!loading && ran && !error && (
-        <div className="space-y-4 sm:space-y-6">
-          <div className="bg-white rounded-lg shadow p-3 sm:p-4 overflow-x-auto">
-            <h2 className="font-semibold mb-3">Revenue</h2>
-            <table className="w-full text-sm min-w-[300px]">
-              <thead><tr className="text-gray-500 text-xs border-b"><th className="text-left pb-2">Account</th><th className="text-right pb-2">Amount</th></tr></thead>
-              <tbody>
-                {revenue.map((r) => (
-                  <tr key={r.account_id} className="border-b last:border-0">
-                    <td className="py-2 whitespace-nowrap">{r.account_code} - {r.account_name}</td>
-                    <td className="py-2 text-right whitespace-nowrap">{formatIDR(r.credit_total - r.debit_total)}</td>
-                  </tr>
-                ))}
-                {revenue.length === 0 && <tr><td colSpan={2} className="py-4 text-center text-gray-400">No revenue</td></tr>}
-              </tbody>
-              <tfoot><tr className="font-semibold border-t"><td className="pt-2">Total Revenue</td><td className="pt-2 text-right">{formatIDR(totalRevenue)}</td></tr></tfoot>
-            </table>
-          </div>
+        <div className="space-y-4">
+          <ReportTable title="Revenue" rows={revenue} totalLabel="Total Revenue" totalValue={totalRevenue} />
+          <ReportTable title="Expenses" rows={expense} totalLabel="Total Expenses" totalValue={totalExpense} />
 
-          <div className="bg-white rounded-lg shadow p-3 sm:p-4 overflow-x-auto">
-            <h2 className="font-semibold mb-3">Expenses</h2>
-            <table className="w-full text-sm min-w-[300px]">
-              <thead><tr className="text-gray-500 text-xs border-b"><th className="text-left pb-2">Account</th><th className="text-right pb-2">Amount</th></tr></thead>
-              <tbody>
-                {expense.map((r) => (
-                  <tr key={r.account_id} className="border-b last:border-0">
-                    <td className="py-2 whitespace-nowrap">{r.account_code} - {r.account_name}</td>
-                    <td className="py-2 text-right whitespace-nowrap">{formatIDR(r.debit_total - r.credit_total)}</td>
-                  </tr>
-                ))}
-                {expense.length === 0 && <tr><td colSpan={2} className="py-4 text-center text-gray-400">No expenses</td></tr>}
-              </tbody>
-              <tfoot><tr className="font-semibold border-t"><td className="pt-2">Total Expenses</td><td className="pt-2 text-right">{formatIDR(totalExpense)}</td></tr></tfoot>
-            </table>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-3 sm:p-4">
-            <div className="flex justify-between items-center">
-              <span className="font-bold">Net Income</span>
-              <span className={`font-bold text-lg ${netIncome >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatIDR(netIncome)}</span>
-            </div>
-          </div>
+          <Card>
+            <CardContent className="p-5">
+              <div className="flex justify-between items-center">
+                <span className="font-bold text-lg">Net Income</span>
+                <span className={`font-bold text-lg ${netIncome >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
+                  {formatIDR(netIncome)}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>

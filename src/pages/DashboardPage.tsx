@@ -3,6 +3,11 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatIDR } from '../lib/format'
 import type { Journal } from '../lib/types'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { BookOpen, ScrollText, Wallet, Plus } from 'lucide-react'
 
 export function DashboardPage() {
   const [accountCount, setAccountCount] = useState(0)
@@ -36,64 +41,79 @@ export function DashboardPage() {
     load()
   }, [])
 
+  const stats = [
+    { title: 'Active Accounts', value: accountCount, icon: BookOpen, link: '/accounts', linkLabel: 'View All' },
+    { title: 'Posted Journals', value: journalCount, icon: ScrollText, link: '/journals', linkLabel: 'View All' },
+    { title: 'Total Assets', value: formatIDR(totalAssets), icon: Wallet, link: '/reports/balance-sheet', linkLabel: 'Balance Sheet' },
+  ]
+
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <Button render={<Link to="/journals/new" />} size="sm">
+          <Plus className="h-4 w-4 mr-1" />
+          New Entry
+        </Button>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm text-gray-500">Active Accounts</p>
-          <p className="text-2xl font-bold">{accountCount}</p>
-          <Link to="/accounts" className="text-sm text-blue-600 hover:underline">View All</Link>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm text-gray-500">Posted Journals</p>
-          <p className="text-2xl font-bold">{journalCount}</p>
-          <Link to="/journals" className="text-sm text-blue-600 hover:underline">View All</Link>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm text-gray-500">Total Assets</p>
-          <p className="text-2xl font-bold">{formatIDR(totalAssets)}</p>
-          <Link to="/reports/balance-sheet" className="text-sm text-blue-600 hover:underline">Balance Sheet</Link>
-        </div>
+        {stats.map((stat) => (
+          <Card key={stat.title}>
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">{stat.title}</p>
+                  <p className="text-2xl font-bold mt-1">{stat.value}</p>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#F08521]/10">
+                  <stat.icon className="h-5 w-5 text-[#F08521]" />
+                </div>
+              </div>
+              <Link to={stat.link} className="text-sm text-[#F08521] hover:underline mt-3 inline-block">
+                {stat.linkLabel}
+              </Link>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      <div className="bg-white rounded-lg shadow p-4">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">Recent Journal Entries</h2>
-          <Link to="/journals/new" className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
-            New Entry
-          </Link>
-        </div>
-        {recentJournals.length === 0 ? (
-          <p className="text-gray-500 text-sm">No journal entries yet.</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-gray-500 border-b">
-                <th className="pb-2">Date</th>
-                <th className="pb-2">Description</th>
-                <th className="pb-2">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentJournals.map((j) => (
-                <tr key={j.id} className="border-b last:border-0">
-                  <td className="py-2">{j.date}</td>
-                  <td className="py-2">{j.description}</td>
-                  <td className="py-2">
-                    <span className={`px-2 py-0.5 rounded text-xs ${
-                      j.status === 'posted' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    }`}>
-                      {j.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <Card>
+        <CardHeader className="p-5 pb-3">
+          <CardTitle className="text-lg">Recent Journal Entries</CardTitle>
+        </CardHeader>
+        <CardContent className="p-5">
+          {recentJournals.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">No journal entries yet.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recentJournals.map((j) => (
+                  <TableRow key={j.id}>
+                    <TableCell className="text-sm">{j.date}</TableCell>
+                    <TableCell className="text-sm">{j.description}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={j.status === 'posted' ? 'default' : 'destructive'}
+                        className="text-xs"
+                      >
+                        {j.status}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

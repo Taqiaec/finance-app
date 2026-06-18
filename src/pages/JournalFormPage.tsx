@@ -6,6 +6,15 @@ import { calcDebitTotal, calcCreditTotal, isBalanced, hasValidLines } from '../l
 import { formatIDR } from '../lib/format'
 import type { Account, Period } from '../lib/types'
 import type { DraftLine } from '../lib/accounting'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Separator } from '@/components/ui/separator'
+import { Plus, X } from 'lucide-react'
 
 let lineIdCounter = 0
 function newLineId(): string {
@@ -127,196 +136,205 @@ export function JournalFormPage() {
       <h1 className="text-2xl font-bold mb-6">{isEdit ? 'Edit Journal Entry' : 'New Journal Entry'}</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-white rounded-lg shadow p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Period</label>
-            <select
-              value={periodId}
-              onChange={(e) => setPeriodId(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-            >
-              <option value="">No period</option>
-              {periods.map((p) => (
-                <option key={p.id} value={p.id}>{p.name} {p.is_locked ? '(locked)' : ''}</option>
-              ))}
-            </select>
-          </div>
-          <div className="md:col-span-1 md:col-start-1 md:row-start-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <input
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-              placeholder="e.g. Cash sale to customer"
-            />
-          </div>
-        </div>
+        <Card>
+          <CardContent className="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Date</Label>
+              <Input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Period</Label>
+              <Select value={periodId} onValueChange={(v) => setPeriodId(v ?? '')}>
+                <SelectTrigger>
+                  <SelectValue placeholder="No period" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No period</SelectItem>
+                  {periods.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name} {p.is_locked ? '(locked)' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Input
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="e.g. Cash sale to customer"
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="font-semibold text-sm">Journal Lines</h2>
-            <button type="button" onClick={addLine} className="text-sm text-blue-600 hover:underline">+ Add Line</button>
-          </div>
+        <Card>
+            <CardHeader className="p-5 pb-3">
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-lg">Journal Lines</CardTitle>
+              <Button type="button" variant="ghost" size="sm" onClick={addLine}>
+                <Plus className="h-4 w-4 mr-1" />
+                Add Line
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="p-5">
+            {/* Desktop table */}
+            <div className="hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Account</TableHead>
+                    <TableHead className="w-24">Type</TableHead>
+                    <TableHead className="text-right w-40">Amount (IDR)</TableHead>
+                    <TableHead className="w-10"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {lines.map((line) => (
+                    <TableRow key={line.id}>
+                      <TableCell>
+                        <Select value={line.account_id} onValueChange={(v) => updateLine(line.id, 'account_id', v ?? '')}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select account" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {accounts.map((a) => (
+                              <SelectItem key={a.id} value={a.id}>{a.code} - {a.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => toggleLineType(line.id)}
+                          className={`text-xs font-medium ${
+                            line.type === 'debit'
+                              ? 'border-[#F08521]/30 text-[#F08521] bg-[#F08521]/5 hover:bg-[#F08521]/10'
+                              : 'border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
+                          }`}
+                        >
+                          {line.type.toUpperCase()}
+                        </Button>
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={line.amount || ''}
+                          onChange={(e) => updateLine(line.id, 'amount', parseInt(e.target.value) || 0)}
+                          className="text-right"
+                          placeholder="0"
+                        />
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {lines.length > 2 && (
+                          <Button type="button" variant="ghost" size="sm" onClick={() => removeLine(line.id)} className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive">
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
 
-          {/* Desktop table */}
-          <div className="hidden md:block">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-gray-500 text-xs border-b">
-                  <th className="text-left pb-2">Account</th>
-                  <th className="text-left pb-2 w-24">Type</th>
-                  <th className="text-right pb-2 w-40">Amount (IDR)</th>
-                  <th className="pb-2 w-10"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {lines.map((line) => (
-                  <tr key={line.id} className="border-b last:border-0">
-                    <td className="py-2">
-                      <select
-                        value={line.account_id}
-                        onChange={(e) => updateLine(line.id, 'account_id', e.target.value)}
-                        className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
-                      >
-                        <option value="">Select account</option>
+            {/* Mobile stacked cards */}
+            <div className="md:hidden space-y-3">
+              {lines.map((line, idx) => (
+                <Card key={line.id} className="border border-border">
+                  <CardContent className="p-3 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-medium text-muted-foreground">Line {idx + 1}</span>
+                      {lines.length > 2 && (
+                        <Button type="button" variant="ghost" size="sm" onClick={() => removeLine(line.id)} className="h-6 px-2 text-xs text-destructive hover:text-destructive">
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                    <Select value={line.account_id} onValueChange={(v) => updateLine(line.id, 'account_id', v ?? '')}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select account" />
+                      </SelectTrigger>
+                      <SelectContent>
                         {accounts.map((a) => (
-                          <option key={a.id} value={a.id}>{a.code} - {a.name}</option>
+                          <SelectItem key={a.id} value={a.id}>{a.code} - {a.name}</SelectItem>
                         ))}
-                      </select>
-                    </td>
-                    <td className="py-2">
-                      <button
+                      </SelectContent>
+                    </Select>
+                    <div className="flex gap-2">
+                      <Button
                         type="button"
+                        variant="outline"
+                        size="sm"
                         onClick={() => toggleLineType(line.id)}
-                        className={`px-3 py-1 rounded text-xs font-medium ${
-                          line.type === 'debit' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+                        className={`shrink-0 text-xs font-medium ${
+                          line.type === 'debit'
+                            ? 'border-[#F08521]/30 text-[#F08521] bg-[#F08521]/5'
+                            : 'border-emerald-300 text-emerald-700 bg-emerald-50'
                         }`}
                       >
                         {line.type.toUpperCase()}
-                      </button>
-                    </td>
-                    <td className="py-2">
-                      <input
+                      </Button>
+                      <Input
                         type="number"
                         min="0"
                         step="1"
                         value={line.amount || ''}
                         onChange={(e) => updateLine(line.id, 'amount', parseInt(e.target.value) || 0)}
-                        className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-right"
+                        className="text-right"
                         placeholder="0"
                       />
-                    </td>
-                    <td className="py-2 text-center">
-                      {lines.length > 2 && (
-                        <button type="button" onClick={() => removeLine(line.id)} className="text-red-500 hover:text-red-700 text-xs">
-                          X
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="font-semibold text-sm border-t-2">
-                  <td className="pt-2">Totals</td>
-                  <td></td>
-                  <td className="pt-2 text-right">
-                    <span className="text-blue-600">{formatIDR(debitTotal)}</span>
-                    {' / '}
-                    <span className="text-green-600">{formatIDR(creditTotal)}</span>
-                  </td>
-                  <td></td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
-          {/* Mobile stacked cards */}
-          <div className="md:hidden space-y-3">
-            {lines.map((line, idx) => (
-              <div key={line.id} className="border border-gray-200 rounded-lg p-3 space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-medium text-gray-500">Line {idx + 1}</span>
-                  {lines.length > 2 && (
-                    <button type="button" onClick={() => removeLine(line.id)} className="text-red-500 hover:text-red-700 text-xs">
-                      Remove
-                    </button>
-                  )}
-                </div>
-                <select
-                  value={line.account_id}
-                  onChange={(e) => updateLine(line.id, 'account_id', e.target.value)}
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-                >
-                  <option value="">Select account</option>
-                  {accounts.map((a) => (
-                    <option key={a.id} value={a.id}>{a.code} - {a.name}</option>
-                  ))}
-                </select>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => toggleLineType(line.id)}
-                    className={`shrink-0 px-4 py-2 rounded text-xs font-medium ${
-                      line.type === 'debit' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
-                    }`}
-                  >
-                    {line.type.toUpperCase()}
-                  </button>
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={line.amount || ''}
-                    onChange={(e) => updateLine(line.id, 'amount', parseInt(e.target.value) || 0)}
-                    className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm text-right"
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
+            <Separator className="my-4" />
 
-          <div className="mt-3 flex items-center gap-3">
-            <span className="text-sm font-semibold">Totals</span>
-            <span className="text-sm">
-              <span className="text-blue-600">{formatIDR(debitTotal)}</span>
-              {' / '}
-              <span className="text-green-600">{formatIDR(creditTotal)}</span>
-            </span>
-            {balanced ? (
-              <span className="text-green-600 text-sm font-medium">Balanced</span>
-            ) : (
-              <span className="text-red-600 text-sm font-medium">
-                Unbalanced ({formatIDR(Math.abs(debitTotal - creditTotal))} difference)
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-semibold">Totals</span>
+              <span className="text-sm">
+                <span className="text-[#F08521] font-medium">{formatIDR(debitTotal)}</span>
+                {' / '}
+                <span className="text-emerald-600 font-medium">{formatIDR(creditTotal)}</span>
               </span>
-            )}
-          </div>
-        </div>
+              {balanced ? (
+                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs">
+                  Balanced
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs">
+                  Unbalanced ({formatIDR(Math.abs(debitTotal - creditTotal))} difference)
+                </Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
-        {error && <p className="text-red-600 text-sm">{error}</p>}
+        {error && <p className="text-sm text-destructive">{error}</p>}
 
         <div className="flex gap-2">
-          <button
+          <Button
             type="submit"
             disabled={saving || !balanced}
-            className="bg-blue-600 text-white px-6 py-2 rounded text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
           >
             {saving ? 'Saving...' : isEdit ? 'Update' : 'Post Entry'}
-          </button>
-          <button type="button" onClick={() => navigate('/journals')} className="bg-gray-200 text-gray-700 px-4 py-2 rounded text-sm">
+          </Button>
+          <Button type="button" variant="ghost" onClick={() => navigate('/journals')}>
             Cancel
-          </button>
+          </Button>
         </div>
       </form>
     </div>

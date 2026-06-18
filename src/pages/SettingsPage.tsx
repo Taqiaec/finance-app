@@ -2,6 +2,11 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import type { UserProfile, UserRole } from '../lib/types'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { ArrowUp, ArrowDown } from 'lucide-react'
 
 export function SettingsPage() {
   const { profile } = useAuth()
@@ -31,7 +36,7 @@ export function SettingsPage() {
     return (
       <div className="max-w-2xl">
         <h1 className="text-2xl font-bold mb-4">Settings</h1>
-        <p className="text-gray-500">You do not have permission to access this page.</p>
+        <p className="text-sm text-muted-foreground">You do not have permission to access this page.</p>
       </div>
     )
   }
@@ -41,53 +46,70 @@ export function SettingsPage() {
       <h1 className="text-2xl font-bold mb-6">User & Role Management</h1>
 
       {loading ? (
-        <p className="text-gray-500">Loading...</p>
+        <p className="text-sm text-muted-foreground">Loading...</p>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-x-auto">
-          <table className="w-full text-sm min-w-[500px]">
-            <thead>
-              <tr className="text-left text-gray-500 bg-gray-50">
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Role</th>
-                <th className="px-4 py-3">Joined</th>
-                <th className="px-4 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.id} className="border-t hover:bg-gray-50">
-                  <td className="px-4 py-3 whitespace-nowrap">{u.full_name ?? '—'}</td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <span className={`px-2 py-0.5 rounded text-xs ${
-                      u.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'
-                    }`}>
-                      {u.role}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-gray-500">
-                    {new Date(u.created_at).toLocaleDateString('id-ID')}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    {u.id === profile?.id ? (
-                      <span className="text-xs text-gray-400">You</span>
-                    ) : (
-                      <button
-                        onClick={() => updateRole(u.id, u.role === 'admin' ? 'viewer' : 'admin')}
-                        disabled={updating === u.id}
-                        className="text-blue-600 hover:underline text-xs disabled:opacity-50"
+        <Card>
+          <CardContent className="p-5 overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Joined</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.map((u) => (
+                  <TableRow key={u.id}>
+                    <TableCell className="text-sm whitespace-nowrap">{u.full_name ?? '—'}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={`text-xs ${
+                          u.role === 'admin'
+                            ? 'bg-purple-50 text-purple-700 border-purple-200'
+                            : 'bg-muted text-muted-foreground'
+                        }`}
                       >
-                        {u.role === 'admin' ? 'Demote to Viewer' : 'Promote to Admin'}
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {users.length === 0 && (
-                <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">No users found</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                        {u.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                      {new Date(u.created_at).toLocaleDateString('id-ID')}
+                    </TableCell>
+                    <TableCell>
+                      {u.id === profile?.id ? (
+                        <span className="text-xs text-muted-foreground">You</span>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => updateRole(u.id, u.role === 'admin' ? 'viewer' : 'admin')}
+                          disabled={updating === u.id}
+                          className="h-7 px-2 text-xs"
+                        >
+                          {u.role === 'admin' ? (
+                            <><ArrowDown className="h-3 w-3 mr-1" /> Demote</>
+                          ) : (
+                            <><ArrowUp className="h-3 w-3 mr-1" /> Promote</>
+                          )}
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {users.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                      No users found
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
     </div>
   )
