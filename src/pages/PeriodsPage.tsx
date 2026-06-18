@@ -30,6 +30,9 @@ export function PeriodsPage() {
     if (!name || !startDate || !endDate) { setError('All fields required'); return }
     if (startDate > endDate) { setError('Start date must be before end date'); return }
 
+    const overlap = periods.find((p) => !(endDate < p.start_date || startDate > p.end_date))
+    if (overlap) { setError(`Overlaps with period "${overlap.name}"`); return }
+
     const { error: insertErr } = await supabase.from('periods').insert({
       name, start_date: startDate, end_date: endDate,
     })

@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { formatIDR } from '../../lib/format'
-import type { Account, Period, JournalLine } from '../../lib/types'
+import type { Period } from '../../lib/types'
 
 interface CFRow {
+  account_id: string
   account_code: string
   account_name: string
-  amount: number
+  cash_flow_category: string
+  total_debit: number
+  total_credit: number
 }
 
 interface CFSection {
@@ -22,6 +25,7 @@ export function CashFlowPage() {
   const [sections, setSections] = useState<CFSection[]>([])
   const [loading, setLoading] = useState(false)
   const [ran, setRan] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     async function load() {
@@ -34,41 +38,20 @@ export function CashFlowPage() {
   async function runReport() {
     setLoading(true)
     setRan(true)
+    setError('')
 
-    let journalQuery = supabase.from('journals').select('id').eq('status', 'posted')
-    if (selectedPeriod) journalQuery = journalQuery.eq('period_id', selectedPeriod)
-    const { data: journals } = await journalQuery
-    if (!journals || journals.length === 0) { setSections([]); setLoading(false); return }
+    let query = supabase.from('v_cash_flow').select('*')
+    if (selectedPeriod) query = query.eq('period_id', selectedPeriod)
+    const { data, error: queryError } = await query.order('account_code')
 
-    const journalIds = journals.map((j: { id: string }) => j.id)
-    const { data: lines } = await supabase.from('journal_lines').select('*').in('journal_id', journalIds)
-    const { data: accounts } = await supabase.from('accounts').select('*')
-    if (!lines || !accounts) { setLoading(false); return }
-
-    const accountMap = new Map<string, Account>()
-    for (const a of accounts as Account[]) accountMap.set(a.id, a)
-
-    const agg = new Map<string, { category: string; code: string; name: string; debit: number; credit: number }>()
-
-    for (const l of lines as JournalLine[]) {
-      const acc = accountMap.get(l.account_id)
-      if (!acc || acc.cash_flow_category === 'none') continue
-      const prev = agg.get(l.account_id) ?? { category: acc.cash_flow_category, code: acc.code, name: acc.name, debit: 0, credit: 0 }
-      if (l.type === 'debit') prev.debit += l.amount
-      else prev.credit += l.amount
-      agg.set(l.account_id, prev)
-    }
-
-    const groups: CFRow[][] = [[], [], []]
+    if (queryError) { setError(`Report unavailable: ${queryError.message}`); setSections([]); setLoading(false); return }
+    const all = (data as CFRow[]) ?? []
     const catIndex: Record<string, number> = { operating: 0, investing: 1, financing: 2 }
-    for (const [, v] of agg) {
-      let net = 0
-      if (v.debit > v.credit) net = v.debit - v.credit
-      else net = -(v.credit - v.debit)
-      const idx = catIndex[v.category]
-      if (idx !== undefined) {
-        groups[idx]!.push({ account_code: v.code, account_name: v.name, amount: net })
-      }
+    const groups: CFRow[][] = [[], [], []]
+
+    for (const row of all) {
+      const idx = catIndex[row.cash_flow_category]
+      if (idx !== undefined) groups[idx]!.push(row)
     }
 
     const labels = ['Operating Activities', 'Investing Activities', 'Financing Activities'] as const
@@ -77,7 +60,7 @@ export function CashFlowPage() {
       label,
       category: cats[i]!,
       rows: groups[i]!,
-      total: groups[i]!.reduce((s, r) => s + r.amount, 0),
+      total: groups[i]!.reduce((s, r) => s + (r.total_debit - r.total_credit), 0),
     }))
     setSections(result)
     setLoading(false)
@@ -102,7 +85,9 @@ export function CashFlowPage() {
 
       {loading && <p className="text-gray-500">Loading...</p>}
 
-      {!loading && ran && (
+      {error && <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded p-3 mb-4">{error}</p>}
+
+      {!loading && ran && !error && (
         <div className="space-y-4 sm:space-y-6">
           {sections.map((sec) => (
             <div key={sec.category} className="bg-white rounded-lg shadow p-3 sm:p-4 overflow-x-auto">
@@ -110,12 +95,15 @@ export function CashFlowPage() {
               <table className="w-full text-sm min-w-[300px]">
                 <thead><tr className="text-gray-500 text-xs border-b"><th className="text-left pb-2">Account</th><th className="text-right pb-2">Cash Flow</th></tr></thead>
                 <tbody>
-                  {sec.rows.map((r) => (
-                    <tr key={r.account_code} className="border-b last:border-0">
-                      <td className="py-2 whitespace-nowrap">{r.account_code} - {r.account_name}</td>
-                      <td className={`py-2 text-right whitespace-nowrap ${r.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatIDR(r.amount)}</td>
-                    </tr>
-                  ))}
+                  {sec.rows.map((r) => {
+                    const net = r.total_debit - r.total_credit
+                    return (
+                      <tr key={r.account_id} className="border-b last:border-0">
+                        <td className="py-2 whitespace-nowrap">{r.account_code} - {r.account_name}</td>
+                        <td className={`py-2 text-right whitespace-nowrap ${net >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatIDR(net)}</td>
+                      </tr>
+                    )
+                  })}
                   {sec.rows.length === 0 && <tr><td colSpan={2} className="py-4 text-center text-gray-400">None</td></tr>}
                 </tbody>
                 <tfoot><tr className="font-semibold border-t"><td className="pt-2">Net {sec.label}</td><td className={`pt-2 text-right ${sec.total >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatIDR(sec.total)}</td></tr></tfoot>

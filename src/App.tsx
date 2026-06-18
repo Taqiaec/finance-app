@@ -7,6 +7,8 @@ import { AccountsPage } from './pages/AccountsPage'
 import { JournalsPage } from './pages/JournalsPage'
 import { JournalFormPage } from './pages/JournalFormPage'
 import { PeriodsPage } from './pages/PeriodsPage'
+import { SettingsPage } from './pages/SettingsPage'
+import { NotFoundPage } from './pages/NotFoundPage'
 import { TrialBalancePage } from './pages/reports/TrialBalancePage'
 import { ProfitLossPage } from './pages/reports/ProfitLossPage'
 import { BalanceSheetPage } from './pages/reports/BalanceSheetPage'
@@ -27,12 +29,14 @@ export default function App() {
               <Route path="journals/new" element={<JournalFormPage />} />
               <Route path="journals/:id" element={<JournalFormPage />} />
               <Route path="periods" element={<PeriodsPage />} />
+              <Route path="settings" element={<SettingsPage />} />
               <Route path="reports/trial-balance" element={<TrialBalancePage />} />
               <Route path="reports/profit-loss" element={<ProfitLossPage />} />
               <Route path="reports/balance-sheet" element={<BalanceSheetPage />} />
               <Route path="reports/cash-flow" element={<CashFlowPage />} />
             </Route>
           </Route>
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

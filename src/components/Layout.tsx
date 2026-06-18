@@ -11,6 +11,7 @@ const navItems = [
   { to: '/reports/profit-loss', label: 'Profit & Loss' },
   { to: '/reports/balance-sheet', label: 'Balance Sheet' },
   { to: '/reports/cash-flow', label: 'Cash Flow' },
+  { to: '/settings', label: 'Settings', adminOnly: true },
 ]
 
 export function Layout() {
@@ -52,7 +53,9 @@ export function Layout() {
           )}
         </div>
         <nav className="flex-1 p-2 space-y-1 overflow-auto">
-          {navItems.map((item) => (
+          {navItems
+            .filter((item) => !item.adminOnly || profile?.role === 'admin')
+            .map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

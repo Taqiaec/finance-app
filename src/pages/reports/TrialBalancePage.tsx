@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { formatIDR } from '../../lib/format'
-import type { Account, Period, JournalLine } from '../../lib/types'
+import type { Period } from '../../lib/types'
 
 interface TrialBalanceRow {
   account_id: string
@@ -10,7 +10,6 @@ interface TrialBalanceRow {
   account_type: string
   total_debit: number
   total_credit: number
-  balance: number
 }
 
 export function TrialBalancePage() {
@@ -19,6 +18,7 @@ export function TrialBalancePage() {
   const [rows, setRows] = useState<TrialBalanceRow[]>([])
   const [loading, setLoading] = useState(false)
   const [ran, setRan] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     async function load() {
@@ -31,51 +31,14 @@ export function TrialBalancePage() {
   async function runReport() {
     setLoading(true)
     setRan(true)
+    setError('')
 
-    let journalQuery = supabase.from('journals').select('id').eq('status', 'posted')
-    if (selectedPeriod) {
-      journalQuery = journalQuery.eq('period_id', selectedPeriod)
-    }
-    const { data: journals } = await journalQuery
-    if (!journals || journals.length === 0) { setRows([]); setLoading(false); return }
+    let query = supabase.from('v_trial_balance').select('*')
+    if (selectedPeriod) query = query.eq('period_id', selectedPeriod)
+    const { data, error: queryError } = await query.order('account_code')
 
-    const journalIds = journals.map((j: { id: string }) => j.id)
-
-    const { data: lines } = await supabase
-      .from('journal_lines')
-      .select('*')
-      .in('journal_id', journalIds)
-
-    if (!lines || lines.length === 0) { setRows([]); setLoading(false); return }
-
-    const { data: accounts } = await supabase.from('accounts').select('*')
-    const accountMap = new Map<string, Account>()
-    if (accounts) for (const a of accounts as Account[]) accountMap.set(a.id, a)
-
-    const agg = new Map<string, { debit: number; credit: number }>()
-    for (const l of lines as JournalLine[]) {
-      const prev = agg.get(l.account_id) ?? { debit: 0, credit: 0 }
-      if (l.type === 'debit') prev.debit += l.amount
-      else prev.credit += l.amount
-      agg.set(l.account_id, prev)
-    }
-
-    const result: TrialBalanceRow[] = []
-    for (const [accId, totals] of agg) {
-      const acc = accountMap.get(accId)
-      if (!acc) continue
-      result.push({
-        account_id: accId,
-        account_code: acc.code,
-        account_name: acc.name,
-        account_type: acc.type,
-        total_debit: totals.debit,
-        total_credit: totals.credit,
-        balance: totals.debit - totals.credit,
-      })
-    }
-    result.sort((a, b) => a.account_code.localeCompare(b.account_code))
-    setRows(result)
+    if (queryError) { setError(`Report unavailable: ${queryError.message}`); setRows([]); setLoading(false); return }
+    setRows((data as TrialBalanceRow[]) ?? [])
     setLoading(false)
   }
 
@@ -107,7 +70,9 @@ export function TrialBalancePage() {
 
       {loading && <p className="text-gray-500">Loading...</p>}
 
-      {!loading && ran && (
+      {error && <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded p-3 mb-4">{error}</p>}
+
+      {!loading && ran && !error && (
         <div className="bg-white rounded-lg shadow overflow-x-auto">
           <table className="w-full text-sm min-w-[500px]">
             <thead>

@@ -29,7 +29,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq('id', userId)
       .single()
     if (error) console.error('fetchProfile error:', error)
-    console.log('fetchProfile data:', data)
     setProfile(data as UserProfile | null)
   }
 

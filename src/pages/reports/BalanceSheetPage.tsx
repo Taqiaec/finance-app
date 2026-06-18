@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { formatIDR } from '../../lib/format'
-import type { Account, Period, JournalLine } from '../../lib/types'
+import type { Period } from '../../lib/types'
 
 interface BSRow {
+  account_id: string
   account_code: string
   account_name: string
-  balance: number
+  account_type: string
+  total_debit: number
+  total_credit: number
 }
 
 export function BalanceSheetPage() {
@@ -17,6 +20,7 @@ export function BalanceSheetPage() {
   const [equity, setEquity] = useState<BSRow[]>([])
   const [loading, setLoading] = useState(false)
   const [ran, setRan] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     async function load() {
@@ -29,54 +33,23 @@ export function BalanceSheetPage() {
   async function runReport() {
     setLoading(true)
     setRan(true)
+    setError('')
 
-    let journalQuery = supabase.from('journals').select('id, date').eq('status', 'posted')
-    const { data: allPeriods } = await supabase.from('periods').select('*').order('end_date')
-    if (selectedPeriod && allPeriods) {
-      const period = (allPeriods as Period[]).find((p) => p.id === selectedPeriod)
-      if (period) journalQuery = journalQuery.lte('date', period.end_date)
-    }
-    const { data: journals } = await journalQuery
-    if (!journals || journals.length === 0) { setAssets([]); setLiabilities([]); setEquity([]); setLoading(false); return }
+    let query = supabase.from('v_balance_sheet').select('*')
+    if (selectedPeriod) query = query.eq('period_id', selectedPeriod)
+    const { data, error: queryError } = await query.order('account_code')
 
-    const journalIds = journals.map((j: { id: string }) => j.id)
-    const { data: lines } = await supabase.from('journal_lines').select('*').in('journal_id', journalIds)
-    const { data: accounts } = await supabase.from('accounts').select('*')
-    if (!lines || !accounts) { setLoading(false); return }
-
-    const accountMap = new Map<string, Account>()
-    for (const a of accounts as Account[]) accountMap.set(a.id, a)
-
-    const agg = new Map<string, { type: string; code: string; name: string; debit: number; credit: number }>()
-    for (const l of lines as JournalLine[]) {
-      const acc = accountMap.get(l.account_id)
-      if (!acc || (acc.type !== 'asset' && acc.type !== 'liability' && acc.type !== 'equity')) continue
-      const prev = agg.get(l.account_id) ?? { type: acc.type, code: acc.code, name: acc.name, debit: 0, credit: 0 }
-      if (l.type === 'debit') prev.debit += l.amount
-      else prev.credit += l.amount
-      agg.set(l.account_id, prev)
-    }
-
-    const assetRows: BSRow[] = []
-    const liabRows: BSRow[] = []
-    const eqRows: BSRow[] = []
-    for (const [, v] of agg) {
-      if (v.type === 'asset') assetRows.push({ account_code: v.code, account_name: v.name, balance: v.debit - v.credit })
-      else if (v.type === 'liability') liabRows.push({ account_code: v.code, account_name: v.name, balance: v.credit - v.debit })
-      else eqRows.push({ account_code: v.code, account_name: v.name, balance: v.credit - v.debit })
-    }
-    assetRows.sort((a, b) => a.account_code.localeCompare(b.account_code))
-    liabRows.sort((a, b) => a.account_code.localeCompare(b.account_code))
-    eqRows.sort((a, b) => a.account_code.localeCompare(b.account_code))
-    setAssets(assetRows)
-    setLiabilities(liabRows)
-    setEquity(eqRows)
+    if (queryError) { setError(`Report unavailable: ${queryError.message}`); setAssets([]); setLiabilities([]); setEquity([]); setLoading(false); return }
+    const all = (data as BSRow[]) ?? []
+    setAssets(all.filter((r) => r.account_type === 'asset'))
+    setLiabilities(all.filter((r) => r.account_type === 'liability'))
+    setEquity(all.filter((r) => r.account_type === 'equity'))
     setLoading(false)
   }
 
-  const totalAssets = assets.reduce((s, r) => s + r.balance, 0)
-  const totalLiabilities = liabilities.reduce((s, r) => s + r.balance, 0)
-  const totalEquity = equity.reduce((s, r) => s + r.balance, 0)
+  const totalAssets = assets.reduce((s, r) => s + (r.total_debit - r.total_credit), 0)
+  const totalLiabilities = liabilities.reduce((s, r) => s + (r.total_credit - r.total_debit), 0)
+  const totalEquity = equity.reduce((s, r) => s + (r.total_credit - r.total_debit), 0)
 
   return (
     <div className="max-w-full">
@@ -95,7 +68,9 @@ export function BalanceSheetPage() {
 
       {loading && <p className="text-gray-500">Loading...</p>}
 
-      {!loading && ran && (
+      {error && <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded p-3 mb-4">{error}</p>}
+
+      {!loading && ran && !error && (
         <div className="space-y-4 sm:space-y-6">
           {[
             { title: 'Assets', rows: assets, total: totalAssets },
@@ -107,9 +82,15 @@ export function BalanceSheetPage() {
               <table className="w-full text-sm min-w-[300px]">
                 <thead><tr className="text-gray-500 text-xs border-b"><th className="text-left pb-2">Account</th><th className="text-right pb-2">Balance</th></tr></thead>
                 <tbody>
-                  {section.rows.map((r) => (
-                    <tr key={r.account_code} className="border-b last:border-0"><td className="py-2 whitespace-nowrap">{r.account_code} - {r.account_name}</td><td className="py-2 text-right whitespace-nowrap">{formatIDR(r.balance)}</td></tr>
-                  ))}
+                  {section.rows.map((r) => {
+                    const balance = r.account_type === 'asset' ? r.total_debit - r.total_credit : r.total_credit - r.total_debit
+                    return (
+                      <tr key={r.account_id} className="border-b last:border-0">
+                        <td className="py-2 whitespace-nowrap">{r.account_code} - {r.account_name}</td>
+                        <td className="py-2 text-right whitespace-nowrap">{formatIDR(balance)}</td>
+                      </tr>
+                    )
+                  })}
                   {section.rows.length === 0 && <tr><td colSpan={2} className="py-4 text-center text-gray-400">None</td></tr>}
                 </tbody>
                 <tfoot><tr className="font-semibold border-t"><td className="pt-2">Total {section.title}</td><td className="pt-2 text-right">{formatIDR(section.total)}</td></tr></tfoot>

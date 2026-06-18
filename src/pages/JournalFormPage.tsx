@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../lib/auth'
 import { calcDebitTotal, calcCreditTotal, isBalanced, hasValidLines } from '../lib/accounting'
 import { formatIDR } from '../lib/format'
 import type { Account, Period } from '../lib/types'
@@ -14,6 +15,7 @@ function newLineId(): string {
 export function JournalFormPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const isEdit = Boolean(id)
 
   const [accounts, setAccounts] = useState<Account[]>([])
@@ -96,7 +98,7 @@ export function JournalFormPage() {
     } else {
       const { data: journal, error: jErr } = await supabase
         .from('journals')
-        .insert({ date, description, period_id: periodId || null, status: 'posted' })
+        .insert({ date, description, period_id: periodId || null, status: 'posted', created_by: user?.id ?? null })
         .select()
         .single()
 

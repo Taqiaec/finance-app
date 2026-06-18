@@ -2,34 +2,39 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatIDR } from '../lib/format'
-import type { Account, Journal } from '../lib/types'
+import type { Journal } from '../lib/types'
 
 export function DashboardPage() {
   const [accountCount, setAccountCount] = useState(0)
   const [journalCount, setJournalCount] = useState(0)
   const [recentJournals, setRecentJournals] = useState<Journal[]>([])
-  const [accounts, setAccounts] = useState<Account[]>([])
+  const [totalAssets, setTotalAssets] = useState(0)
 
   useEffect(() => {
     async function load() {
-      const [accRes, jrnlRes, recentRes] = await Promise.all([
+      const [accRes, jrnlRes, recentRes, assetRes] = await Promise.all([
         supabase.from('accounts').select('id', { count: 'exact', head: true }),
         supabase.from('journals').select('id', { count: 'exact', head: true }).eq('status', 'posted'),
         supabase.from('journals').select('*').order('date', { ascending: false }).limit(5),
+        supabase
+          .from('journal_lines')
+          .select('amount, type, journals!inner(status), accounts!inner(type)')
+          .eq('accounts.type', 'asset')
+          .eq('journals.status', 'posted'),
       ])
       if (accRes.count !== null) setAccountCount(accRes.count)
       if (jrnlRes.count !== null) setJournalCount(jrnlRes.count)
       if (recentRes.data) setRecentJournals(recentRes.data as Journal[])
 
-      const accData = await supabase.from('accounts').select('*').eq('is_active', true)
-      if (accData.data) setAccounts(accData.data as Account[])
+      if (assetRes.data) {
+        const balance = (assetRes.data as { amount: number; type: string }[]).reduce(
+          (sum, line) => sum + (line.type === 'debit' ? line.amount : -line.amount), 0
+        )
+        setTotalAssets(balance)
+      }
     }
     load()
   }, [])
-
-  const totalAssets = accounts
-    .filter((a) => a.type === 'asset')
-    .reduce((sum, a) => sum + (a.id ? 0 : 0), 0)
 
   return (
     <div>
